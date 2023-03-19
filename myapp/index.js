@@ -39,6 +39,7 @@ const authenticateToken = (request, response, next) => {
       if (error) {
         response.send("Invalid Access Token");
       } else {
+        request.username = payload.username;
         next();
       }
     });
@@ -59,7 +60,7 @@ app.get("/books/", authenticateToken, async (request, response) => {
 });
 
 //Get Book API
-app.get("/books/:bookId/", async (request, response) => {
+app.get("/books/:bookId/", authenticateToken, async (request, response) => {
   const { bookId } = request.params;
   const getBookQuery = `
       SELECT
@@ -114,10 +115,20 @@ app.post("/login/", async (request, response) => {
         username: username,
       };
       const jwtToken = jwt.sign(payload, "MY_SECRET_TOKEN");
+      console.log(jwtToken);
       response.send({ jwtToken });
     } else {
       response.status(400);
       response.send("Invalid Password");
     }
   }
+});
+
+//GET user profile API
+app.get("/profile/", authenticateToken, async (request, response) => {
+  const { username } = request;
+  const getUserDetailsQuery = `SELECT * FROM user WHERE username = '${username}';`;
+  const dbUser = await db.get(getUserDetailsQuery);
+
+  response.send(dbUser);
 });
